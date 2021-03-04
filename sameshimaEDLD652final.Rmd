@@ -315,13 +315,15 @@ plot3
 ```
 
 ```{r}
+# i haven't really changed almost anything about the plot itself in this code, but i just mostly copy/pasted and edited the structure of the code to enhance readability and understanding. so much of this is just stylistic preference so it's very open to everyone's own preferences
 
 acc_ind_wide %>% 
   ggplot(aes(x = valid, y = invalid, size, size = 1)) +
   geom_point(size = 5, color = "black") +
   geom_smooth(method = lm, se = F, fullrange = T, 
               alpha = 0.2, size = 2, color = "red") +
-  labs(title = paste0("Correlations of Cueing Congruency, 6 Items: ", r1, ", ", r2),
+  labs(title = paste0("Correlations of Cueing Congruency, 6 Items: ", r1, ", ", r2), 
+       # RG: i would maybe put the "6 items..." in a subtitle if possible, but this looks good too! and i slightly changed the title here to fix some spacing and missing comma issues
        y = "Invalid Cueing",
        x = "Valid Cueing") +
   scale_x_continuous(limits = c(0.5, 1), breaks = seq(0.5, 1, 0.1)) +
@@ -332,6 +334,27 @@ acc_ind_wide %>%
         panel.grid.minor = element_blank(),
         plot.title = element_text(family = "Helvetica", face = "bold", 
                                 size = 16, vjust = 1.4, hjust = 1),
+        axis.title = element_text(family = "Helvetica", face = "bold", vjust = 0.8))
+
+# alternative code with subtitle
+
+acc_ind_wide %>% 
+  ggplot(aes(x = valid, y = invalid, size, size = 1)) +
+  geom_point(size = 5, color = "black") +
+  geom_smooth(method = lm, se = F, fullrange = T, 
+              alpha = 0.2, size = 2, color = "red") +
+  labs(title = "Correlations of Cueing Congruency", 
+       subtitle = paste0("6 Items: ", r1, ", ", r2), # or you could also put this in a caption. not sure which i'd prefer
+       y = "Invalid Cueing",
+       x = "Valid Cueing") +
+  scale_x_continuous(limits = c(0.5, 1), breaks = seq(0.5, 1, 0.1)) +
+  scale_y_continuous(limits = c(0,0.72), breaks = seq(0, 1, 0.1)) +
+  theme(legend.key = element_blank(),
+        legend.position = "none",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(family = "Helvetica", face = "bold", size = 16),
+        plot.subtitle = element_text(family = "Helvetica", face = "bold", size = 14),
         axis.title = element_text(family = "Helvetica", face = "bold", vjust = 0.8))
 
 ```
