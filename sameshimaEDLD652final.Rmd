@@ -135,7 +135,7 @@ acc_ind_wide %>%
   ggplot(aes(valid, invalid)) +
   geom_point(size = 2) +
   geom_smooth(method = "lm", color = "red", size = 2) + # RG: totally optional, just added it for fun, lol
-  labs(title = "Accuracy for Valid Versus Invalid Cues", # RG: added placeholder labels
+  labs(title = "Accuracy for Valid Versus Invalid Cues", # RG: added placeholder labels that you can edit
        x = "Accuracy Among Valid Cues",
        y = "Accuracy Among Invalid Cues") +
   theme_light()
@@ -252,21 +252,29 @@ plot2 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) +
   geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
   geom_line(size=2)+geom_point(size=6)+
   #Aesthetics!-------------------------
-scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
+  scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   scale_x_continuous(breaks=1:8)+
   scale_color_manual(values=c("black","red"))+
   ylab("Decision Weight")+xlab("Element Position")+
-  labs(title = "placeholder title") +
+  labs(title = "placeholder title") + # RG: added this
   theme(plot.title = element_text(size =20,face='bold'))+
   theme(legend.key = element_blank())+
   #theme(legend.position="none")+
-  theme(legend.position=c(0.45,0.9),legend.text=element_text(size=15,face="bold"),legend.direction="horizontal",legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  theme(axis.text=element_text(size=14,face="bold"))+
-  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))+ 
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10))+
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12))+
-  theme(strip.background=element_blank())
+  theme(legend.position = c(0.45,0.9), # RG: all this can be done at the same time
+        legend.text=element_text(size=15,face="bold"),
+        legend.direction ="horizontal",
+        legend.title = element_blank(),
+        legend.key.size = unit(1,"cm"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text=element_text(size=14,face="bold"),
+        axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
+
+# RG: i don't think you need any of these strip arguments bc you aren't using facet_wrap in this plot
+#         strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10),
+#         strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12),
+#         strip.background=element_blank())
+
 plot2
 ```
 
