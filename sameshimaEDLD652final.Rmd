@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls(all = TRUE))
 
 # Libraries
-#install.packages("import")
 library(here)
 library(import)
 library(foreign)
@@ -27,7 +26,7 @@ library(corrplot)
 library(gee)
 library(ez)
 library(effects)
-library(grDevices) # added this since it couldn't find the `quartz()` function but then it still didn't work, I suspect b/c I have windows OS
+library(grDevices) # RG: added this since it couldn't find the `quartz()` function but then it still didn't work, I suspect b/c I have windows OS
 ```
 
 # Data
@@ -124,6 +123,25 @@ acc_ind<-ds %>%
 #  Ploting for check, correleation of individucal mean ACC values between invalid cue and valid cue trails (Data vis plot 1)   
 cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 plot(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
+
+# RG: to make this easier to plot, i would use pivot_wider()
+
+acc_ind_wide <- acc_ind %>% 
+  pivot_wider(names_from = CUETYPE, values_from = ACC)
+
+# RG: now you can easily use ggplot to plot
+
+acc_ind_wide %>% 
+  ggplot(aes(valid, invalid)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", color = "red", size = 2) + # RG: totally optional, just added it for fun, lol
+  labs(title = "Accuracy for Valid Versus Invalid Cues", # RG: added placeholder labels
+       x = "Accuracy Among Valid Cues",
+       y = "Accuracy Among Invalid Cues") +
+  theme_light()
+  
+# RG: now this is a good base plot that you can customize as you'd like to add your own flair. i did a couple of simple aesthetic things to match your other plots. and maybe you could use ggtext() to add an annotation that shows the correlation between valid and invalid cues
+
 ```
 
 # Modeling
@@ -223,7 +241,7 @@ ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal) plotted on y with position of elements plotted on x   (Data vis plot 2)
 
-#grDevices::quartz(width=5,height=4) # i think this code is not reproducible for people with Windows OS
+#grDevices::quartz(width=5,height=4) #RG: i think this code is not reproducible for people with Windows OS
 
 
 ```
@@ -237,7 +255,8 @@ plot2 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) +
 scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   scale_x_continuous(breaks=1:8)+
   scale_color_manual(values=c("black","red"))+
-  ylab("Decision Weight")+xlab("Element Position")+#ggtitle('')+
+  ylab("Decision Weight")+xlab("Element Position")+
+  labs(title = "placeholder title") +
   theme(plot.title = element_text(size =20,face='bold'))+
   theme(legend.key = element_blank())+
   #theme(legend.position="none")+
@@ -255,6 +274,7 @@ plot2
 ```{r}
 # Correlation of accuracy between valid and invalid cue trials, grouping subject ID by cuetype and calculating correlation on accuracy between trial cue type (Data vis plot 3)
 #Add referece line data 
+
 theme_set(theme_bw(base_size=18))#32/28
 acc_ind<-ds %>%
   group_by(SUBID,CUETYPE)%>%
@@ -267,7 +287,8 @@ r1=paste('R^2=',round((m1$r.squared),digits=1));
 r2=paste('R=',round((sqrt(m1$r.squared)),digits=1))
 
 acc_ind
-plot3 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
+
+plot3 <- ggplot(acc_ind_wide,aes(x=valid,y=invalid,size=1))+
   geom_point(size=5,colour="black")+
   scale_x_continuous(limits=c(0.5,1),breaks=seq(0.5,1,0.1))+
   scale_y_continuous(limits=c(0,0.72),breaks=seq(0,1,0.1))+
@@ -281,7 +302,29 @@ plot3 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
   theme(plot.title=element_text(family="Helvetica", face="bold", size=16,vjust=1.4,hjust=1))+
   #   theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())+
   theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
+
 plot3
 ```
 
+```{r}
+
+acc_ind_wide %>% 
+  ggplot(aes(x = valid, y = invalid, size, size = 1)) +
+  geom_point(size = 5, color = "black") +
+  geom_smooth(method = lm, se = F, fullrange = T, 
+              alpha = 0.2, size = 2, color = "red") +
+  labs(title = paste0("Correlations of Cueing Congruency, 6 Items: ", r1, ", ", r2),
+       y = "Invalid Cueing",
+       x = "Valid Cueing") +
+  scale_x_continuous(limits = c(0.5, 1), breaks = seq(0.5, 1, 0.1)) +
+  scale_y_continuous(limits = c(0,0.72), breaks = seq(0, 1, 0.1)) +
+  theme(legend.key = element_blank(),
+        legend.position = "none",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(family = "Helvetica", face = "bold", 
+                                size = 16, vjust = 1.4, hjust = 1),
+        axis.title = element_text(family = "Helvetica", face = "bold", vjust = 0.8))
+
+```
 
