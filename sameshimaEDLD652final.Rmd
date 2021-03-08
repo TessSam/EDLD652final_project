@@ -115,6 +115,10 @@ acc_ind<-ds %>%
 cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 plot(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
+
+## Your scatterplot here is clear and constructed well. Would it make sense to overlay a trend line (or even something more complex to account for error)? My statistical knowledge here is limited, but I would hope to see axes labeled as individual mean ACC values between invalid cue and valid cue trails and what the data is showing, perhaps in a caption or subtitle, depending on your audience. --AG
+
+
 #======================================================================================================
 #Process3-Modeling
 #======================================================================================================
@@ -205,6 +209,9 @@ EVnum<-rep(seq(1,4,1),2);stde<-rep(NA,1,8);#stde<-m$coefficients[2:13,2]
 ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal) plotted on y with position of elements plotted on x   (Data vis plot 2)
+
+## Plot 2 is bold and clear! The text format and colors complement the visual well. Depending on your audience and if applicable, a quick title and summary would help explain the visual and the significance of what we are seeing here: what is the significance of the trends between congruent and incongruent? --AG
+
 quartz(width=5,height=4)
 plot2 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
   geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
@@ -228,6 +235,10 @@ plot2
 
 # Correlation of accuracy between valid and invalid cue trials, grouping subject ID by cuetype and calculating correlation on accuracy between trial cue type (Data vis plot 3)
 #Add referece line data 
+
+
+## Similar to plot 2, the theme and presentation of this data makes it very easy to follow. You can consider using direct labeling to put the r^2 or r value next to the line, perhaps also in red. --AG
+
 theme_set(theme_bw(base_size=18))#32/28
 acc_ind<-ds %>%
   group_by(SUBID,CUETYPE)%>%
