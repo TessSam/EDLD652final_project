@@ -4,7 +4,11 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warnings = FALSE)
+
+#J: Maybe consider using code folding in your global options and repressing some of the messages
+# that are currently popping up to aid in readability. It's really helpful to  be able to see the
+# code but the first go-through I was initially a bit confused.
 ```
 
 ```{r}
@@ -17,16 +21,16 @@ rm(list = ls(all = TRUE))
 library(here)
 library(import)
 library(foreign)
-library(dplyr)
-library(tidyr)
 library(gridExtra)
-library(ggplot2)
+library(tidyverse) #J: I condensed dplyr, tidyr, and ggplot2 into a single load for tidyverse
 library(lme4)
 library(RColorBrewer)
 library(corrplot)
 library(gee)
 library(ez)
 library(effects)
+
+#J: A lot of these packages are new to me, I'm really excited to see how you use them!
 
 #======================================================================================================
 #Process1-Data Loading and Organization
@@ -43,6 +47,8 @@ head(ds)
 # set.seed(009)
 # RT <- sample(nrow(ds))
 # scramble <- ds[RT,]
+
+#J: This is my first time seeing how data can be scrambled, really helpful!
 
 #Add trial grouping variable 
 ds$BTRIAL = (max(ds$TRIAL)*ds$BLOCK-1)+ds$TRIAL
@@ -79,6 +85,8 @@ ds<-ds%>%group_by(SUBID)%>%summarize(ACC=mean(ACC))%>%
 # Aggregate and run ANOVA
 # agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
 # ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
+
+#J: Ooh, ezANOVA is a new function for me--looks handy!
 
 
 #======================================================================================================
@@ -210,6 +218,8 @@ plot2 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) +
   geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
   geom_line(size=2)+geom_point(size=6)+
   #Aesthetics!-------------------------
+
+#J: I really like that you comment where your aesthetic mappings start, I'm going to borrow that
 scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   scale_x_continuous(breaks=1:8)+
   scale_color_manual(values=c("black","red"))+
@@ -257,3 +267,17 @@ plot3 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
 plot3
 
 ```
+
+```{r Some comments}
+# Viz 1: 
+# I'm a bit confused looking at your first plot, mainly just because I don't fully understand what the project is, so I'm excited for your presentation to get a little more context. I don't know if it would potentially warp what you're trying to convey, but I wonder if using {cowplot} or something similar to staple the effect plots together with shared axes might aid readability and reduce repetition of axes.
+
+# Viz 2:
+# Really nice and clear! I like the minimalist look in this plot a lot, and especially like how you incorporated the legend into the plot itself so it's all in one space. 
+
+# Viz 3:
+# Like plot 2, really nice and clear! I like the black and red look together. It's easy to read and nice that it matches the second plot. The only room for improvement here I see is with the title. Maybe using latex for "R^2" and moving everything after "Correlations of Cueing Congruency" to a second line? I didn't play with it in this fork because the way it's set up (with paste0) is unfamiliar to me and I was afraid it might mess something up.
+
+# Great job!
+```
+
