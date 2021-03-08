@@ -5,7 +5,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE, eval = T, warnings = F}
-#messages too distarcting, use code folding, tips from dave
+#messages too distarcting, use code folding, tips from Dave
 knitr::opts_chunk$set(echo = F)
 
 ```
@@ -90,12 +90,11 @@ ds<-ds%>%
           left_join(ds,by=("SUBID"))
 
 
-
-
 ```
 
 ```{r}
-## Stage2-Behavior Analysis (DatavisPlot 1, mean aggregate of accuracy by cuetype)
+##Datavis plot 1
+## Stage2-Behavior Analysis ( mean aggregate of accuracy by cuetype)
 
 
 #Aggregated mean for accuracy by cuetype 
@@ -132,8 +131,11 @@ plot1
 ## Cont...
 ## Seperate expectation cue groups for later use
 
+# Aggregate and run ANOVA, get eta sq for the scatterplot
+agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
+ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
 
-# RT:Cue effect
+# RT:Cue effect, for later
 rt_exp<-ds %>% 
   group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
     summarise(RT=mean(RT))%>% 
@@ -151,15 +153,25 @@ acc_ind<-ds %>%
 acc_ind_wide <- acc_ind %>%
   pivot_wider(names_from = CUETYPE, values_from = ACC)
 
-# ggplot plotting correlation for grouped mean accuracy  
+
+# ggplot plotting correlation for grouped mean accuracy
+#add some annotation for effect size, tips from Raleigh 
 plot2 <- acc_ind_wide %>% 
   ggplot(aes(valid, invalid)) +
   geom_point(size = 4) +
-  geom_smooth(method = "lm", color = "red", size = 1.5, se = F) + 
+  geom_smooth(method = "lm", 
+              color = "red", 
+              size = 1.5, 
+              se = F) + 
+  annotate('text', 
+           x = 0.873, 
+           y = 0.675,
+           label = "eta^{2} == 0.495", parse = T, size = 5) +
+  #geom_text(size = 5, x = 0.875, y = 0.675, label = "Etasq = 0.495") +
   labs(title = "Correlation Between Accuracy on Valid and Invalid Cue Type", 
        subtitle = "Accuracy grouped by subject ID and Cuetype before averaging",
-       x = " Accuracy Among Valid Cues",
-       y = "Accuracy Among Invalid Cues") +
+       x = " Valid Cue Accuracy",
+       y = "Invalid Cue Accuracy") +
   theme_light()
 plot2
 
