@@ -1,45 +1,49 @@
 ---
-title: "Final"
+title: "SameshimaFinalProjectDatavis"
 output: html_document
+
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, eval = T, warnings = F}
+#messages too distarcting, use code folding, tips from dave
+knitr::opts_chunk$set(echo = F)
+
 ```
 
 ```{r}
-
-#Removing evrything from workspace
+#Removing evrything from workspace,easy reset
 rm(list = ls(all = TRUE))
 
-# Libraries
+##Libraries
+#==========================================
+#too messy, tips from dave, don't load redundant packages (just use tidyverse) 
 #install.packages("import")
 library(here)
 library(import)
-library(foreign)
-library(dplyr)
-library(tidyr)
-library(gridExtra)
-library(ggplot2)
-library(lme4)
-library(RColorBrewer)
-library(corrplot)
-library(gee)
-library(ez)
-library(effects)
+#library(foreign)#importing data from spss
+library(tidyverse)
+library(gridExtra)#
+library(lme4) #glm mixed effects
+library(RColorBrewer) 
+library(corrplot) #graphical display of a correlation matrix, confidence interval
+library(gee) #Generalized estimation equation,
+library(ez) #factorial analysis stuff
+library(effects) #displaying of linear model effects
+```
 
-#======================================================================================================
-#Process1-Data Loading and Organization
-#======================================================================================================
+```{r}
+## Stage1 - Data Loading and Organization
+#=============================================================
 
 # READING FILES
 #setwd(Dir_Data)#Change directory
 #Beh_text <- import(here("_posts", "2021-02-24-edld652project-webpage", "LetDriftGo_expcCue_BehP.txt"))
+
 Beh_text <- read.delim('LetDriftGo_expcCue_BehP.txt', header=TRUE, fill=TRUE)
 ds<-Beh_text;
 head(ds)
 
-#scramble ds RT just incase I can use raw lab data
+#scramble ds RT just incase I cant use raw lab data
 # set.seed(009)
 # RT <- sample(nrow(ds))
 # scramble <- ds[RT,]
@@ -47,77 +51,126 @@ head(ds)
 #Add trial grouping variable 
 ds$BTRIAL = (max(ds$TRIAL)*ds$BLOCK-1)+ds$TRIAL
 
-#Add category as correct answer
+#Add category for correct answer(1)
 ds$Category <- ds$CATEGORY;
 ds$Category[ds$Category==2] <- 0;
 ds$Category<-as.integer(ds$Category)
 
-# # Cue-driven expectancy context
-ds$CUETYPE<-dplyr::recode(ds$CUETYPE, `1` = "valid", `0` = "invalid")
+# # Cue-driven expectancy context, valid if expectation cue is consistant with correct trial axis group it is valid, if not it is invalid  
+#recode cuetype values to fit b value for adaptive gain model
+ds$CUETYPE<-dplyr::recode(ds$CUETYPE, `1` = "valid", `0` = "invalid")#
 ds$CUECATb<-ds$CUECAT;
+#t1 and -1 distinction necessary for calculating cue evidence compatability Ck value in model
 ds$CUECATb[ds$CUECATb==2] <- -1
+
+# Checks for correct variable creation 
+head(ds$CUECAT)
+head(ds$CUECATb)
 
 # Checking
 #any(ds$CUECAT[ds$DVCP2CUE_1==1]==ds$DVCAT_1[ds$DVCP2CUE_1==1])
 
 # #Evidence-driven expectancy
-
-# Factorize
+# Factorize for model input
 cols<-colnames(ds)
 cols<-cols[grepl("DVCP2CUE",cols)]
 ds[cols] <- lapply(ds[cols], factor)
 
-# Exclude subjects
+# Exclude subjects(cant remember why, probably not paying attention)
 ds<-subset(ds,SUBID!=228 & SUBID!=231)
 
-# PGROUP (1 = high performer 0 = low performer)
-ds<-ds%>%group_by(SUBID)%>%summarize(ACC=mean(ACC))%>%
-  mutate(PGROUP=as.numeric(ACC>median(ACC)))%>%
-  dplyr::select(c(SUBID,PGROUP))%>%
-  left_join(ds,by=("SUBID"))
 
-# Aggregate and run ANOVA
-# agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
-# ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
+# PGROUP (1 = high performer 0 = low performer, median, may have had to do this as subject numbers were low)
+# median split data for high and low perfamnace subject distinction for 
+ds<-ds%>%
+  group_by(SUBID)%>%
+    summarize(ACC=mean(ACC))%>%
+      mutate(PGROUP=as.numeric(ACC>median(ACC)))%>%
+        dplyr::select(c(SUBID,PGROUP))%>%
+          left_join(ds,by=("SUBID"))
 
 
-#======================================================================================================
-#Process2-Behavior Analysis
-#======================================================================================================
-# Seperate expectation cue groups for later use
 
-#Checking accuracy
-acc_all<-aggregate(ACC ~ SUBID, data = ds, mean)
-print((acc_all))
 
+```
+
+```{r}
+## Stage2-Behavior Analysis (DatavisPlot 1, mean aggregate of accuracy by cuetype)
+
+
+#Aggregated mean for accuracy by cuetype 
 # ACC:Cue efffect
-# agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
-# aggG<-aggregate(ACC~CUETYPE, data = agg, mean);
 acc_exp<-ds %>% 
   group_by(SUBID,CUETYPE) %>% 
     summarise(ACC=mean(ACC))%>%
       group_by(CUETYPE) %>% 
         summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC)
+# bar plot showing overall accuracy effects by cue type
+plot1 <- acc_exp %>% 
+  ggplot(aes(CUETYPE, mean)) +
+  geom_bar(stat = "identity", 
+           fill = "black", 
+           width = 0.6,
+           position = position_dodge()) +
+  geom_errorbar(aes(ymin = acc_exp$mean - acc_exp$se, 
+                    ymax = acc_exp$mean + acc_exp$se), 
+                width = 0.2,
+                colour = "grey",
+                position = position_dodge(0.5)) +
+  labs(title = "Mean Accuracy Across Participants for Valid/Invalid Cues", 
+       x = " Expectation Cuetype",
+       y = "Accuracy") +
+  theme_minimal()
+plot1
+#Change color
+
+
+```
+
+```{r}
+## Plot2
+## Cont...
+## Seperate expectation cue groups for later use
+
 
 # RT:Cue effect
 rt_exp<-ds %>% 
-  group_by(SUBID,CUETYPE) %>% 
-    summarise(RT=mean(RT))%>%
+  group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
+    summarise(RT=mean(RT))%>% 
       group_by(CUETYPE) %>% 
         summarise_each(funs(mean, se=sd(.)/sqrt(n())),RT)
 
-# Check individuals accuracy
+# Check individuals accuracy, for each subject average cuetype specific accuracy
 acc_ind<-ds %>% 
   group_by(SUBID,CUETYPE) %>% 
     summarise(ACC=mean(ACC));print(acc_ind) 
 
-#  Ploting for check, correleation of individucal mean ACC values between invalid cue and valid cue trails (Data vis plot 1)   
-cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
-plot(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
-#======================================================================================================
-#Process3-Modeling
-#======================================================================================================
+# raleighs Suggestion, pivot_wider and ggplot(fantastic)
+# create df with valid and invalid RT columns
+acc_ind_wide <- acc_ind %>%
+  pivot_wider(names_from = CUETYPE, values_from = ACC)
+
+# ggplot plotting correlation for grouped mean accuracy  
+plot2 <- acc_ind_wide %>% 
+  ggplot(aes(valid, invalid)) +
+  geom_point(size = 4) +
+  geom_smooth(method = "lm", color = "red", size = 1.5, se = F) + 
+  labs(title = "Correlation Between Accuracy on Valid and Invalid Cue Type", 
+       subtitle = "Accuracy grouped by subject ID and Cuetype before averaging",
+       x = " Accuracy Among Valid Cues",
+       y = "Accuracy Among Invalid Cues") +
+  theme_light()
+plot2
+
+
+
+```
+
+
+```{r}
+## Stage3-Modeling (Datavis plot2)
+#================================================================
 
 # DV normal
 m2_log_y=glmer(PCARD~1+DV_1+DV_2+DV_3+DV_4+(1|SUBID),family=binomial,data=ds)
@@ -176,9 +229,10 @@ m=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+
           (DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+
           (DV_2:DVCP2CUE_1+DV_3:DVCP2CUE_2+DV_4:DVCP2CUE_3)+(1|SUBID),family=binomial,data=ds)
 summary(m)
-#======================================================================================================
+
 #Process5-Plotting-ggplot2
 #======================================================================================================
+
 CSCALE_PURD = rev(brewer.pal(9,"PuRd"));
 CSCALE_BLUE = rev(brewer.pal(9,"Blues"));
 CSCALE_PiYG = rev(brewer.pal(11,"PiYG"));
@@ -206,7 +260,7 @@ ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal) plotted on y with position of elements plotted on x   (Data vis plot 2)
 quartz(width=5,height=4)
-plot2 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+plot3 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
   geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
   geom_line(size=2)+geom_point(size=6)+
   #Aesthetics!-------------------------
@@ -224,9 +278,14 @@ scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10))+
   theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12))+
   theme(strip.background=element_blank())
-plot2
+plot3
 
-# Correlation of accuracy between valid and invalid cue trials, grouping subject ID by cuetype and calculating correlation on accuracy between trial cue type (Data vis plot 3)
+```
+
+
+```{r}
+## Overkill, mistook this plot for plt 3
+# Correlation of accuracy between valid and invalid cue trials, grouping subject ID by cuetype and calculating correlation on accuracy between trial cue type (Data vis plot 4)
 #Add referece line data 
 theme_set(theme_bw(base_size=18))#32/28
 acc_ind<-ds %>%
@@ -240,7 +299,7 @@ r1=paste('R^2=',round((m1$r.squared),digits=1));
 r2=paste('R=',round((sqrt(m1$r.squared)),digits=1))
 
 acc_ind
-plot3 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
+plot4 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
   geom_point(size=5,colour="black")+
   scale_x_continuous(limits=c(0.5,1),breaks=seq(0.5,1,0.1))+
   scale_y_continuous(limits=c(0,0.72),breaks=seq(0,1,0.1))+
@@ -254,6 +313,6 @@ plot3 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
   theme(plot.title=element_text(family="Helvetica", face="bold", size=16,vjust=1.4,hjust=1))+
   #   theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())+
   theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
-plot3
+plot4
 
 ```
