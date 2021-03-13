@@ -18,6 +18,8 @@ rm(list = ls(all = TRUE))
 #==========================================
 #too messy, tips from dave, don't load redundant packages (just use tidyverse) 
 #install.packages("import")
+#install.packages("broom.mixed") #for ez standard error
+library(broom.mixed)
 library(here)
 library(import)
 #library(foreign)#importing data from spss
@@ -29,6 +31,7 @@ library(corrplot) #graphical display of a correlation matrix, confidence interva
 library(gee) #Generalized estimation equation,
 library(ez) #factorial analysis stuff
 library(effects) #displaying of linear model effects
+
 ```
 
 ```{r}
@@ -37,7 +40,7 @@ library(effects) #displaying of linear model effects
 
 # READING FILES
 #setwd(Dir_Data)#Change directory
-#Beh_text <- import(here("_posts", "2021-02-24-edld652project-webpage", "LetDriftGo_expcCue_BehP.txt"))
+#Beh_text <- import(here("EDLD652final_project","LetDriftGo_expcCue_BehP.txt"))
 
 Beh_text <- read.delim('LetDriftGo_expcCue_BehP.txt', header=TRUE, fill=TRUE)
 ds<-Beh_text;
@@ -81,7 +84,7 @@ ds<-subset(ds,SUBID!=228 & SUBID!=231)
 
 
 # PGROUP (1 = high performer 0 = low performer, median, may have had to do this as subject numbers were low)
-# median split data for high and low perfamnace subject distinction for 
+# median split data for high and low perfamnace subject distinction 
 ds<-ds%>%
   group_by(SUBID)%>%
     summarize(ACC=mean(ACC))%>%
@@ -148,7 +151,7 @@ acc_ind<-ds %>%
     summarise(ACC=mean(ACC));print(acc_ind) 
 
 
-# raleighs Suggestion, pivot_wider and ggplot(fantastic)
+# pivot_wider and ggplot(fantastic), tips from Raleigh
 # create df with valid and invalid RT columns
 acc_ind_wide <- acc_ind %>%
   pivot_wider(names_from = CUETYPE, values_from = ACC)
@@ -156,6 +159,7 @@ acc_ind_wide <- acc_ind %>%
 
 # ggplot plotting correlation for grouped mean accuracy
 #add some annotation for effect size, tips from Raleigh 
+#clearer figure axes, tips from Anwesha
 plot2 <- acc_ind_wide %>% 
   ggplot(aes(valid, invalid)) +
   geom_point(size = 4) +
@@ -164,24 +168,21 @@ plot2 <- acc_ind_wide %>%
               size = 1.5, 
               se = F) + 
   annotate('text', 
-           x = 0.873, 
+           x = 0.87, 
            y = 0.675,
            label = "eta^{2} == 0.495", parse = T, size = 5) +
   #geom_text(size = 5, x = 0.875, y = 0.675, label = "Etasq = 0.495") +
-  labs(title = "Correlation Between Accuracy on Valid and Invalid Cue Type", 
-       subtitle = "Accuracy grouped by subject ID and Cuetype before averaging",
-       x = " Valid Cue Accuracy",
+  labs(title = "Correlation of Individual Mean Accuracy Values Between Valid and Invalid Cue Trials", 
+       subtitle = "",
+       x = "Valid Cue Accuracy",
        y = "Invalid Cue Accuracy") +
   theme_light()
 plot2
-
-
-
 ```
 
 
 ```{r}
-## Stage3-Modeling (Datavis plot2)
+## Stage3-Modeling (Datavis plot3)
 #================================================================
 
 # DV normal
@@ -191,34 +192,37 @@ summary(m2_log_y)
 
 
 # DV expected(coarse way)
-m2_exp_v=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
-m2_exp_iv=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
-summary(m2_exp_v)
-summary(m2_exp_iv)
+# m2_exp_v=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
+# m2_exp_iv=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
+# summary(m2_exp_v)
+# summary(m2_exp_iv)
 
 # DV expected (element-wise focusing on matching trials!)
 # DVCP2CUE (0=incongruent 1 = congruent)
 m2_expcmp=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=ds)
-
-m2_expcmp_v=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
-
-m2_expcmp_iv=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
-
 summary(m2_expcmp)
+
+#Mixed effects for valid
+m2_expcmp_v=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
 summary(m2_expcmp_v)
+
+#Mixed effects for invalid
+m2_expcmp_iv=glmer(PCARD~1+(DV_1*DVCP2CUE_1+DV_2*DVCP2CUE_2+DV_3*DVCP2CUE_3+DV_4*DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
 summary(m2_expcmp_iv)     
+
 
 # DV expected (element-wise focusing on matching trials!) 2-way interactions
 # DVCP2CUE (0=incongruent 1 = congruent)
 m2_expcmp=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=ds)
+summary(m2_expcmp)
 
 m2_expcmp_v=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
+summary(m2_expcmp_v)
 
 m2_expcmp_iv=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
-
-summary(m2_expcmp)
-summary(m2_expcmp_v)
 summary(m2_expcmp_iv)  
+
+#plot 
 plot(allEffects(m2_expcmp_v))       
 
 # Cue-expectancy 
@@ -228,7 +232,7 @@ summary(m2_expcmp)
 plot(allEffects(m2_expcmp)) 
 
 
-#Deviation from last evidence (previous position in sequence?)
+#Deviation from last evidence (need to control for effects of previous position in sequence?)
 m=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+
           (DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+
           (DV_2:DUab_2+DV_3:DUab_3+DV_4:DUab_4)+
@@ -242,37 +246,35 @@ m=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+
           (DV_2:DVCP2CUE_1+DV_3:DVCP2CUE_2+DV_4:DVCP2CUE_3)+(1|SUBID),family=binomial,data=ds)
 summary(m)
 
-#Process5-Plotting-ggplot2
+#Process5-Plotting-
 #======================================================================================================
 
-CSCALE_PURD = rev(brewer.pal(9,"PuRd"));
-CSCALE_BLUE = rev(brewer.pal(9,"Blues"));
-CSCALE_PiYG = rev(brewer.pal(11,"PiYG"));
-CSCALE_RdBu = rev(brewer.pal(11,"RdBu"));
-CSCALE_PAIRED = rev(brewer.pal(12,"Paired"));
-CSCALE_YlGnBu = rev(brewer.pal(9,"YlGnBu"));
-CSCALE_BrBG = rev(brewer.pal(9,"BrBG"));
-CSCALE_Greys = rev(brewer.pal(9,"Greys"));
-CSCALE_Set1 = (brewer.pal(9,"Set1"));
-CSET_AGE<-c(CSCALE_PAIRED[6],CSCALE_PAIRED[5])
-
 #Add referece line data 
-theme_set(theme_bw(base_size = 18))#32/28
-
-
-a<-allEffects(m2_expcmp)
+#theme_set(theme_bw(base_size = 18))#32/28
+#a<-allEffects(m2_expcmp)
 
 #format data for plots
 m<-summary(m2_expcmp)
 coefs<-fixef(m2_expcmp);
+#effects for each position separately for congruency(consistant or inconsistant) with cue category   
 coefs<-c(coefs[2:5],coefs[2:5]+coefs[6:9]);
 cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
-EVnum<-rep(seq(1,4,1),2);stde<-rep(NA,1,8);#stde<-m$coefficients[2:13,2]
+
+EVnum<-rep(seq(1,4,1),2);
+#Empty vector to extracted stde
+stde<-rep(NA,1,8);
+#extract row 2 - 10, on column 2
+stde<-m$coefficients[3:10,2]
+
+#standard error extraction?
+
+
 ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
 
-## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal) plotted on y with position of elements plotted on x   (Data vis plot 2)
-quartz(width=5,height=4)
+## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal), plotted on y with position of elements plotted on x   (Data vis plot 3)
+
 plot3 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+  #errorbars not showing 
   geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
   geom_line(size=2)+geom_point(size=6)+
   #Aesthetics!-------------------------
@@ -286,45 +288,10 @@ scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   theme(legend.position=c(0.45,0.9),legend.text=element_text(size=15,face="bold"),legend.direction="horizontal",legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   theme(axis.text=element_text(size=14,face="bold"))+
-  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))+ 
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10))+
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12))+
-  theme(strip.background=element_blank())
+  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
+
 plot3
 
 ```
 
 
-```{r}
-## Overkill, mistook this plot for plt 3
-# Correlation of accuracy between valid and invalid cue trials, grouping subject ID by cuetype and calculating correlation on accuracy between trial cue type (Data vis plot 4)
-#Add referece line data 
-theme_set(theme_bw(base_size=18))#32/28
-acc_ind<-ds %>%
-  group_by(SUBID,CUETYPE)%>%
-    summarise(ACC=mean(ACC))%>%
-  #can maybe change to pivot_wider(names_from = CUETYPE, values_from = ACC)
-      spread(CUETYPE,ACC);
-print(acc_ind) 
-m1 =summary(lm(valid~invalid,acc_ind));
-r1=paste('R^2=',round((m1$r.squared),digits=1));
-r2=paste('R=',round((sqrt(m1$r.squared)),digits=1))
-
-acc_ind
-plot4 <- ggplot(acc_ind,aes(x=valid,y=invalid,size=1))+
-  geom_point(size=5,colour="black")+
-  scale_x_continuous(limits=c(0.5,1),breaks=seq(0.5,1,0.1))+
-  scale_y_continuous(limits=c(0,0.72),breaks=seq(0,1,0.1))+
-  geom_smooth(method=lm,se=FALSE,fullrange=T,alpha=0.2,size=2,color="red") +
-  ggtitle(paste0("Correlations of Cueing Congruency, 6 Items:",r1,r2))+ylab("Invalid Cueing")+xlab("Valid Cueing")+
-  #Bunch of setting for Axises
-  theme(legend.key = element_blank())+
-  theme(legend.position="none")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  #   theme(legend.position=c(0.50,0.5),legend.text = element_text(size = 20,face="bold"),legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
-  theme(plot.title=element_text(family="Helvetica", face="bold", size=16,vjust=1.4,hjust=1))+
-  #   theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())+
-  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
-plot4
-
-```
