@@ -19,6 +19,8 @@ rm(list = ls(all = TRUE))
 #too messy, tips from dave, don't load redundant packages (just use tidyverse) 
 #install.packages("import")
 #install.packages("broom.mixed") #for ez standard error
+#install.packages("gganimate")
+library(gganimate)
 library(broom.mixed)
 library(here)
 library(import)
@@ -104,21 +106,32 @@ ds<-ds%>%
 # ACC:Cue efffect
 acc_exp<-ds %>% 
   group_by(SUBID,CUETYPE) %>% 
-    summarise(ACC=mean(ACC))%>%
-      group_by(CUETYPE) %>% 
-        summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC)
+    summarise(ACC=mean(ACC))
+      
+        
+sumacc <- acc_exp %>% 
+  group_by(CUETYPE) %>%
+    summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC) %>% 
+      rename(ACC = mean) %>% 
+        as.data.frame()
+#plan add gitter plot, animate error bars, add colorblind friendly theme
 # bar plot showing overall accuracy effects by cue type
-plot1 <- acc_exp %>% 
-  ggplot(aes(CUETYPE, mean)) +
-  geom_bar(stat = "identity", 
-           fill = "black", 
-           width = 0.6,
-           position = position_dodge()) +
-  geom_errorbar(aes(ymin = acc_exp$mean - acc_exp$se, 
-                    ymax = acc_exp$mean + acc_exp$se), 
-                width = 0.2,
-                colour = "grey",
-                position = position_dodge(0.5)) +
+plot1 <- 
+  ggplot(data = acc_exp, 
+         aes(CUETYPE, ACC)) +
+  geom_errorbar(data = sumacc,
+                aes(ymin = ACC - se,
+                    ymax = ACC + se),
+                    width = 0.2,
+                    colour = "green",
+                    position = position_dodge(0.5)) +
+  geom_jitter(width = 0.2, 
+              height = 0,
+              size = 2.5) +
+  # geom_bar(stat = "identity", 
+  #          fill = "black", 
+  #          width = 0.6,
+  #          position = position_dodge()) +
   labs(title = "Mean Accuracy Across Participants for Valid/Invalid Cues", 
        x = " Expectation Cuetype",
        y = "Accuracy") +
