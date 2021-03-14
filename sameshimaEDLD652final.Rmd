@@ -108,10 +108,11 @@ acc_exp<-ds %>%
   group_by(SUBID,CUETYPE) %>% 
     summarise(ACC=mean(ACC))
       
-        
+#df for plotting mean and error bars 
 sumacc <- acc_exp %>% 
   group_by(CUETYPE) %>%
     summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC) %>% 
+  #dont know if this fixed it but it workds
       rename(ACC = mean) %>% 
         as.data.frame()
 #plan add gitter plot, animate error bars, add colorblind friendly theme
@@ -119,6 +120,14 @@ sumacc <- acc_exp %>%
 plot1 <- 
   ggplot(data = acc_exp, 
          aes(CUETYPE, ACC)) +
+  # geom_segment(data = sumacc,
+  #              aes(y=ACC,
+  #                  yend = ACC,
+  #                  x= CUETYPE,
+  #                  xend = CUETYPE,
+  #                  width = 2)) +
+  geom_hline(data = sumacc,
+             aes(yintercept=ACC, linetype='dotted')) +
   geom_errorbar(data = sumacc,
                 aes(ymin = ACC - se,
                     ymax = ACC + se),
@@ -138,6 +147,10 @@ plot1 <-
   theme_minimal()
 plot1
 #Change color
+
+a <- data.frame(group=c("A","B","C"), values=c(3,2,4), frame=rep('a',3))
+b <- data.frame(group=c("A","B","C"), values=c(5,3,7), frame=rep('b',3))
+data <- rbind(a,b)
 
 
 ```
