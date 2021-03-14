@@ -249,39 +249,40 @@ summary(m)
 #Process5-Plotting-
 #======================================================================================================
 
-#Add referece line data 
-#theme_set(theme_bw(base_size = 18))#32/28
-#a<-allEffects(m2_expcmp)
+#tidyway of formating mixed models for plot 
+tidied_m <- broom.mixed::tidy(m2_expcmp, conf.int = TRUE)
 
-#format data for plots
-m<-summary(m2_expcmp)
-coefs<-fixef(m2_expcmp);
-#effects for each position separately for congruency(consistant or inconsistant) with cue category   
-coefs<-c(coefs[2:5],coefs[2:5]+coefs[6:9]);
-cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
-
+#evidence position
 EVnum<-rep(seq(1,4,1),2);
-#Empty vector to extracted stde
-stde<-rep(NA,1,8);
-#extract row 2 - 10, on column 2
-stde<-m$coefficients[3:10,2]
+#congruency effect distinction
+cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
+#effects for each position separately for congruency(consistant or inconsistant) with cue category, adjust negative values?
+coefs<- unlist(c(tidied_m[3:6,4],tidied_m[3:6,4]+tidied_m[7:10,4]));
+# data frame for plotting, initial plotting wrong or missing something using tidy
+ds_p2 <-
+  data.frame(EVnum=EVnum,
+             cond=cond,
+             Estimate=c(coefs),
+             stderr=tidied_m$std.error[3:10],
+             conf.low = abs(tidied_m$conf.low[3:10]),
+             conf.high =tidied_m$conf.high[3:10])
 
-#standard error extraction?
+row.names(ds_p2) <- tidied_m$term[3:10]
 
-
-ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
+ds_p2
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal), plotted on y with position of elements plotted on x   (Data vis plot 3)
 
-plot3 <- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
-  #errorbars not showing 
-  geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
+plot3 <- ggplot(ds_p2, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.25,size=.5)+
+  #geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
   geom_line(size=2)+geom_point(size=6)+
   #Aesthetics!-------------------------
-scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
+  scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
   scale_x_continuous(breaks=1:8)+
   scale_color_manual(values=c("black","red"))+
-  ylab("Decision Weight")+xlab("Element Position")+#ggtitle('')+
+  ylab("Decision Weight")+
+  xlab("Element Position")+#ggtitle('')+
   theme(plot.title = element_text(size =20,face='bold'))+
   theme(legend.key = element_blank())+
   #theme(legend.position="none")+
