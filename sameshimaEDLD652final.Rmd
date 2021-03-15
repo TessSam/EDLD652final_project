@@ -184,22 +184,23 @@ acc_ind<-ds %>%
 acc_ind_wide <- acc_ind %>%
   pivot_wider(names_from = CUETYPE, values_from = ACC)
 
-  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
+#scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
 
-# set up bootstrapping object that generates 20 bootstraps
-# and groups by variable `SUBID
-bsr <- bootstrapper(20, SUBID)
+# demo to set up bootstrapping object that generates 20 bootstraps
+    
+bsr <- bootstrapper(40, group = NULL)
+  
 
 animate <- ggplot(acc_ind_wide, aes(valid, invalid, color = SUBID)) +
   geom_smooth(method = "lm", color = NA) +
-  geom_point(alpha = 0.3) +
+  #geom_point(alpha = 0.3) +
   # `.row` is a generated column providing a unique row number for all rows
-  geom_point(data = bsr) +
-  geom_smooth(data = bsr, method = "lm", fullrange = TRUE, se = FALSE) +
+  #geom_point(data = bsr, aes(group = .row)) +
+  geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
   #facet_wrap(~KnownSex, scales = "free_x") +
   #scale_color_manual(values = c(valid = "#E69F00", invalid = "#56B4E9"), guide = "none") +
   theme_bw() +
-  transition_states(.draw, 1, 1) + 
+  transition_states(.draw, 0.5, 0.5) + 
   enter_fade() + exit_fade()
 animate
 
@@ -213,7 +214,9 @@ plot2 <- acc_ind_wide %>%
               color = NA, 
               size = 1.5, 
               se = T) + 
-  geom_point(size = 4) +
+  geom_point(size = 4,
+             alpha = 0.6) +
+  geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
   annotate('text', 
            x = 0.87, 
            y = 0.675,
@@ -222,7 +225,10 @@ plot2 <- acc_ind_wide %>%
        subtitle = "",
        x = "Valid Cue Accuracy",
        y = "Invalid Cue Accuracy") +
-  theme_light()
+  theme_light()+
+  transition_states(.draw, 0.5, 0.5) + 
+  enter_fade() + 
+  exit_fade()
 plot2
 ```
 
