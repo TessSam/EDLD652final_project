@@ -20,10 +20,13 @@ rm(list = ls(all = TRUE))
 #install.packages("import")
 #install.packages("broom.mixed") #for ez standard error
 #install.packages("gganimate")
-library(gganimate)
+#devtools::install_github("wilkelab/ungeviz")
+library(gganimate)#might not use
+library(forcats)
+library(ungeviz)
 library(broom.mixed)
 library(here)
-library(import)
+library(rio)
 #library(foreign)#importing data from spss
 library(tidyverse)
 library(gridExtra)#
@@ -41,10 +44,9 @@ library(effects) #displaying of linear model effects
 #=============================================================
 
 # READING FILES
-#setwd(Dir_Data)#Change directory
-#Beh_text <- import(here("EDLD652final_project","LetDriftGo_expcCue_BehP.txt"))
+#Beh_text <- read.delim('LetDriftGo_expcCue_BehP.txt', header=TRUE, fill=TRUE)
+Beh_text <- import(here::here("LetDriftGo_expcCue_BehP.txt"))
 
-Beh_text <- read.delim('LetDriftGo_expcCue_BehP.txt', header=TRUE, fill=TRUE)
 ds<-Beh_text;
 head(ds)
 
@@ -101,6 +103,8 @@ ds<-ds%>%
 ##Datavis plot 1
 ## Stage2-Behavior Analysis ( mean aggregate of accuracy by cuetype)
 
+#cb friendly palette using black
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 #Aggregated mean for accuracy by cuetype 
 # ACC:Cue efffect
@@ -113,13 +117,15 @@ sumacc <- acc_exp %>%
   group_by(CUETYPE) %>%
     summarise_each(funs(mean,se=sd(.)/sqrt(n())),ACC) %>% 
   #dont know if this fixed it but it workds
-      rename(ACC = mean) %>% 
-        as.data.frame()
+      rename(ACC = mean) %>%
+        group_by(CUETYPE)
+        #as.data.frame()
+
 #plan add gitter plot, animate error bars, add colorblind friendly theme
 # bar plot showing overall accuracy effects by cue type
 plot1 <- 
   ggplot(data = acc_exp, 
-         aes(CUETYPE, ACC)) +
+         aes(CUETYPE, ACC, color = CUETYPE)) +
   # geom_segment(data = sumacc,
   #              aes(y=ACC,
   #                  yend = ACC,
@@ -127,16 +133,19 @@ plot1 <-
   #                  xend = CUETYPE,
   #                  width = 2)) +
   geom_hline(data = sumacc,
-             aes(yintercept=ACC, linetype='dotted')) +
+             aes(yintercept=ACC, 
+                 color = CUETYPE,
+                 linetype = CUETYPE)) +
   geom_errorbar(data = sumacc,
                 aes(ymin = ACC - se,
-                    ymax = ACC + se),
+                    ymax = ACC + se,
+                    colour = "CUETYPE"),
                     width = 0.2,
-                    colour = "green",
                     position = position_dodge(0.5)) +
   geom_jitter(width = 0.2, 
               height = 0,
               size = 2.5) +
+  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
   # geom_bar(stat = "identity", 
   #          fill = "black", 
   #          width = 0.6,
@@ -144,34 +153,27 @@ plot1 <-
   labs(title = "Mean Accuracy Across Participants for Valid/Invalid Cues", 
        x = " Expectation Cuetype",
        y = "Accuracy") +
-  theme_minimal()
+  theme_bw()
 plot1
-#Change color
-
-a <- data.frame(group=c("A","B","C"), values=c(3,2,4), frame=rep('a',3))
-b <- data.frame(group=c("A","B","C"), values=c(5,3,7), frame=rep('b',3))
-data <- rbind(a,b)
-
 
 ```
 
 ```{r}
 ## Plot2
-## Cont...
-## Seperate expectation cue groups for later use
+## group individual accuracy by expectation cue category
 
 # Aggregate and run ANOVA, get eta sq for the scatterplot
 agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
 ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
 
-# RT:Cue effect, for later
+# RT:Cue effect, not using 
 rt_exp<-ds %>% 
   group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
     summarise(RT=mean(RT))%>% 
       group_by(CUETYPE) %>% 
         summarise_each(funs(mean, se=sd(.)/sqrt(n())),RT)
 
-# Check individuals accuracy, for each subject average cuetype specific accuracy
+# Check individual accuracy, for each subject average cuetype specific accuracy
 acc_ind<-ds %>% 
   group_by(SUBID,CUETYPE) %>% 
     summarise(ACC=mean(ACC));print(acc_ind) 
@@ -182,23 +184,41 @@ acc_ind<-ds %>%
 acc_ind_wide <- acc_ind %>%
   pivot_wider(names_from = CUETYPE, values_from = ACC)
 
+  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
+
+# set up bootstrapping object that generates 20 bootstraps
+# and groups by variable `SUBID
+bsr <- bootstrapper(20, SUBID)
+
+animate <- ggplot(acc_ind_wide, aes(valid, invalid, color = SUBID)) +
+  geom_smooth(method = "lm", color = NA) +
+  geom_point(alpha = 0.3) +
+  # `.row` is a generated column providing a unique row number for all rows
+  geom_point(data = bsr) +
+  geom_smooth(data = bsr, method = "lm", fullrange = TRUE, se = FALSE) +
+  #facet_wrap(~KnownSex, scales = "free_x") +
+  #scale_color_manual(values = c(valid = "#E69F00", invalid = "#56B4E9"), guide = "none") +
+  theme_bw() +
+  transition_states(.draw, 1, 1) + 
+  enter_fade() + exit_fade()
+animate
+
 
 # ggplot plotting correlation for grouped mean accuracy
 #add some annotation for effect size, tips from Raleigh 
 #clearer figure axes, tips from Anwesha
 plot2 <- acc_ind_wide %>% 
   ggplot(aes(valid, invalid)) +
-  geom_point(size = 4) +
   geom_smooth(method = "lm", 
-              color = "red", 
+              color = NA, 
               size = 1.5, 
-              se = F) + 
+              se = T) + 
+  geom_point(size = 4) +
   annotate('text', 
            x = 0.87, 
            y = 0.675,
            label = "eta^{2} == 0.495", parse = T, size = 5) +
-  #geom_text(size = 5, x = 0.875, y = 0.675, label = "Etasq = 0.495") +
-  labs(title = "Correlation of Individual Mean Accuracy Values Between Valid and Invalid Cue Trials", 
+  labs(title = "Correlation of Individual Mean Accuracy Values \nBetween Valid and Invalid Cue Trials", 
        subtitle = "",
        x = "Valid Cue Accuracy",
        y = "Invalid Cue Accuracy") +
@@ -217,11 +237,6 @@ m2_log_y=glmer(PCARD~1+DV_1+DV_2+DV_3+DV_4+(1|SUBID),family=binomial,data=ds)
 summary(m2_log_y)
 
 
-# DV expected(coarse way)
-# m2_exp_v=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="valid"))
-# m2_exp_iv=glmer(PCARD~1+(DV_1+DV_2+DV_3+DV_4)+(1|SUBID),family=binomial,data=subset(ds,CUETYPE=="invalid"))
-# summary(m2_exp_v)
-# summary(m2_exp_iv)
 
 # DV expected (element-wise focusing on matching trials!)
 # DVCP2CUE (0=incongruent 1 = congruent)
@@ -257,20 +272,6 @@ m2_expcmp=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+(DV_1:DVCP2CUE_1+DV_2:DVCP
 summary(m2_expcmp)
 plot(allEffects(m2_expcmp)) 
 
-
-#Deviation from last evidence (need to control for effects of previous position in sequence?)
-m=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+
-          (DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+
-          (DV_2:DUab_2+DV_3:DUab_3+DV_4:DUab_4)+
-          (DV_2:DVCP2CUE_2:DUab_2+DV_3:DVCP2CUE_3:DUab_3+DV_4:DVCP2CUE_4:DUab_4)+
-          (1|SUBID),family=binomial,data=ds)
-summary(m)
-
-# Others
-m=glmer(PCARD~1+CUECATb+(DV_1+DV_2+DV_3+DV_4)+
-          (DV_1:DVCP2CUE_1+DV_2:DVCP2CUE_2+DV_3:DVCP2CUE_3+DV_4:DVCP2CUE_4)+
-          (DV_2:DVCP2CUE_1+DV_3:DVCP2CUE_2+DV_4:DVCP2CUE_3)+(1|SUBID),family=binomial,data=ds)
-summary(m)
 
 #Process5-Plotting-
 #======================================================================================================
