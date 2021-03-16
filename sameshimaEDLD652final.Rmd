@@ -123,6 +123,12 @@ sumacc <- acc_exp %>%
 
 #plan add gitter plot, animate error bars, add colorblind friendly theme
 # bar plot showing overall accuracy effects by cue type
+
+group_means <- acc_exp %>% 
+  group_by(CUETYPE) %>% 
+  summarize(mean = mean(ACC))
+
+
 plot1 <- 
   ggplot(data = acc_exp, 
          aes(CUETYPE, ACC, color = CUETYPE)) +
@@ -132,10 +138,10 @@ plot1 <-
   #                  x= CUETYPE,
   #                  xend = CUETYPE,
   #                  width = 2)) +
-  geom_hline(data = sumacc,
-             aes(yintercept=ACC, 
-                 color = CUETYPE,
-                 linetype = CUETYPE)) +
+  # geom_hline(data = sumacc,
+  #            aes(yintercept=ACC, 
+  #                color = CUETYPE,
+  #                linetype = CUETYPE)) +
   geom_errorbar(data = sumacc,
                 aes(ymin = ACC - se,
                     ymax = ACC + se,
@@ -145,7 +151,16 @@ plot1 <-
   geom_jitter(width = 0.2, 
               height = 0,
               size = 2.5) +
-  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
+  annotate("segment", x = 0.8, xend = 1.2, 
+           y = group_means$mean[1], yend =group_means$mean[1],
+           color = "#CC79A7") +
+  annotate("segment", x = 1.8, xend = 2.2, 
+           y = group_means$mean[2], yend =group_means$mean[2],
+           color = "#D55E00") +
+    annotate("text", label = "Mean", x = 1.7,
+           y = group_means$mean[2],
+           color = "#D55E00") +
+  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")) +
   # geom_bar(stat = "identity", 
   #          fill = "black", 
   #          width = 0.6,
@@ -205,7 +220,7 @@ acc_ind_wide <- acc_ind %>%
 
 
 #bootstrapper object     
-bsr <- bootstrapper(40, group = NULL)
+bsr <- bootstrapper(20, group = NULL)
 #coefficient of determination to add to plot
 cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
@@ -218,9 +233,11 @@ plot2 <- acc_ind_wide %>%
               color = NA, 
               size = 1.5, 
               se = T) + 
-  geom_point(size = 4,
-             alpha = 0.6) +
-  geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
+  geom_point(size = 1,
+             alpha = 0.6,
+             color = "grey80") +
+  geom_point(data = bsr, color = "red") +
+  geom_smooth(data = bsr, method = "lm", color = "red", fullrange = T, se = F) +
   annotate('text', 
            x = 0.85, 
            y = 0.75,
@@ -230,10 +247,10 @@ plot2 <- acc_ind_wide %>%
        x = "Valid Cue Accuracy",
        y = "Invalid Cue Accuracy") +
   theme_light()+
-  transition_states(.draw, 0.5, 0.5) + 
-  enter_fade() + 
-  exit_fade()
-plot2
+  transition_states(.draw) +
+  ease_aes()
+
+animate(plot2, fps=1)
 ```
 
 
@@ -318,29 +335,35 @@ plot3 <- ds_p2 %>%
                       ymax=Estimate+stderr), 
                       width=.25,
                       size=.5)+
-                      geom_line(size=2)+
-                      geom_point(size=6)+
+    geom_line(size=2)+
+    geom_point(size=6)+
     #Aesthetics!--------------------------------------------------------
+                  theme_bw()+
                   scale_y_continuous(limits=c(0,1.5),
                                      breaks=seq(0,1.5,0.25))+
                   scale_x_continuous(breaks=1:8)+
                   scale_color_manual(values=c("#E69F00", "#56B4E9"))+
                   ylab("Decision Weight")+
                   xlab("Element Position")+
+                  labs(color = "Cue-Element Congruency")+
                   ggtitle('Decision weights for each piece of evidence \ngrouped by congruency of cued category')+
                   theme(plot.title = element_text(size =15,face='bold'))+
-                  theme(legend.key = element_blank())+
-                  #theme(legend.position="none")+
-                  theme(legend.position=c(0.45,0.9),
-                        legend.text=element_text(size=15,face="bold"),
-                        legend.direction="horizontal",
-                        legend.title = element_blank(),
-                        legend.key.size=unit(1,"cm")) +
-                  theme(panel.grid.major = element_blank(), 
-                        panel.grid.minor = element_blank())+
-                  theme(axis.text=element_text(size=14,face="bold"))+
+                  theme(legend.position = c(0.8,0.8),
+                        legend.key = element_blank(),
+                        legend.text=element_text(family="Helvetica",
+                                                 size=9,
+                                                 face="bold"),
+                        legend.title = element_text(family="Helvetica",
+                                                    size=11,
+                                                    face="bold"),
+                        legend.key.size=unit(1,"cm"),
+                        legend.background = element_rect(fill="transparent")) +
+                  theme(axis.text=element_text(size=14,
+                                               face="bold"))+
                   theme(axis.title=element_text(family="Helvetica", 
-                                                face="bold",vjust=0.8))
+                                                face="bold",
+                                                vjust=0.8))
+                
 
 plot3
 
