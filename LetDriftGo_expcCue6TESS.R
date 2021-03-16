@@ -183,25 +183,25 @@ ds_p<-data.frame(Estimate=c(coefs),cmp=cond,stderr=stde,EVnum=EVnum)
 
 # # Decision Weights
 quartz(width=5,height=4)
-ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
-  geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
-  geom_line(size=2)+geom_point(size=6)+
-  #Aesthetics!-------------------------
-scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
-  scale_x_continuous(breaks=1:8)+
-  scale_color_manual(values=c("black","red"))+
-  ylab("Decision Weight")+xlab("Element Position")+#ggtitle('')+
-  theme(plot.title = element_text(size =20,face='bold'))+
-  theme(legend.key = element_blank())+
-  #theme(legend.position="none")+
-  theme(legend.position=c(0.45,0.9),legend.text=element_text(size=15,face="bold"),legend.direction="horizontal",legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  theme(axis.text=element_text(size=14,face="bold"))+
-  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))+ 
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10))+
-  theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12))+
-  theme(strip.background=element_blank())
-
+plot3<- ggplot(ds_p, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+        geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
+        geom_line(size=2)+geom_point(size=6)+
+        #Aesthetics!-------------------------
+        scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
+        scale_x_continuous(breaks=1:8)+
+        scale_color_manual(values=c("black","red"))+
+        ylab("Decision Weight")+xlab("Element Position")+#ggtitle('')+
+        theme(plot.title = element_text(size =20,face='bold'))+
+        theme(legend.key = element_blank())+
+        #theme(legend.position="none")+
+        theme(legend.position=c(0.45,0.9),legend.text=element_text(size=15,face="bold"),legend.direction="horizontal",legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+        theme(axis.text=element_text(size=14,face="bold"))+
+        theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))+ 
+        theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=10))+
+        theme(strip.text=element_text(family="Helvetica", face="bold",vjust=0.4,size=12))+
+        theme(strip.background=element_blank())
+plot3
 
 # Correlation of accuracy between valid and invalid
 #Add referece line data 

@@ -163,15 +163,15 @@ plot1
 ## group individual accuracy by expectation cue category
 
 # Aggregate and run ANOVA, get eta sq for the scatterplot
-agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
-ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
+# agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
+# ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
 
 # RT:Cue effect, not using 
-rt_exp<-ds %>% 
-  group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
-    summarise(RT=mean(RT))%>% 
-      group_by(CUETYPE) %>% 
-        summarise_each(funs(mean, se=sd(.)/sqrt(n())),RT)
+# rt_exp<-ds %>% 
+#   group_by(SUBID,CUETYPE) %>% #group subject ID and expectation cuetype 
+#     summarise(RT=mean(RT))%>% 
+#       group_by(CUETYPE) %>% 
+#         summarise_each(funs(mean, se=sd(.)/sqrt(n())),RT)
 
 # Check individual accuracy, for each subject average cuetype specific accuracy
 acc_ind<-ds %>% 
@@ -186,24 +186,28 @@ acc_ind_wide <- acc_ind %>%
 
 #scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")) +
 
-# demo to set up bootstrapping object that generates 20 bootstraps
-    
-bsr <- bootstrapper(40, group = NULL)
+# animation demo set up 
+#bootstrapper object     
+#bsr <- bootstrapper(40, group = NULL)
   
+# animate <- ggplot(acc_ind_wide, aes(valid, invalid, color = SUBID)) +
+#   geom_smooth(method = "lm", color = NA) +
+#   #geom_point(alpha = 0.3) +
+#   # `.row` is a generated column providing a unique row number for all rows
+#   #geom_point(data = bsr, aes(group = .row)) +
+#   geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
+#   #facet_wrap(~KnownSex, scales = "free_x") +
+#   #scale_color_manual(values = c(valid = "#E69F00", invalid = "#56B4E9"), guide = "none") +
+#   theme_bw() +
+#   transition_states(.draw, 0.5, 0.5) + 
+#   enter_fade() + exit_fade()
+# animate
 
-animate <- ggplot(acc_ind_wide, aes(valid, invalid, color = SUBID)) +
-  geom_smooth(method = "lm", color = NA) +
-  #geom_point(alpha = 0.3) +
-  # `.row` is a generated column providing a unique row number for all rows
-  #geom_point(data = bsr, aes(group = .row)) +
-  geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
-  #facet_wrap(~KnownSex, scales = "free_x") +
-  #scale_color_manual(values = c(valid = "#E69F00", invalid = "#56B4E9"), guide = "none") +
-  theme_bw() +
-  transition_states(.draw, 0.5, 0.5) + 
-  enter_fade() + exit_fade()
-animate
 
+#bootstrapper object     
+bsr <- bootstrapper(40, group = NULL)
+#coefficient of determination to add to plot
+cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
 # ggplot plotting correlation for grouped mean accuracy
 #add some annotation for effect size, tips from Raleigh 
@@ -218,9 +222,9 @@ plot2 <- acc_ind_wide %>%
              alpha = 0.6) +
   geom_smooth(data = bsr, method = "lm", fullrange = T, se = F) +
   annotate('text', 
-           x = 0.87, 
-           y = 0.675,
-           label = "eta^{2} == 0.495", parse = T, size = 5) +
+           x = 0.85, 
+           y = 0.75,
+           label = "R^{2} == -0.774", parse = T, size = 5) +
   labs(title = "Correlation of Individual Mean Accuracy Values \nBetween Valid and Invalid Cue Trials", 
        subtitle = "",
        x = "Valid Cue Accuracy",
@@ -290,6 +294,7 @@ EVnum<-rep(seq(1,4,1),2);
 #congruency effect distinction
 cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
 #effects for each position separately for congruency(consistant or inconsistant) with cue category, adjust negative values?
+#with adding
 coefs<- unlist(c(tidied_m[3:6,4],tidied_m[3:6,4]+tidied_m[7:10,4]));
 # data frame for plotting, initial plotting wrong or missing something using tidy
 ds_p2 <-
@@ -306,23 +311,36 @@ ds_p2
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal), plotted on y with position of elements plotted on x   (Data vis plot 3)
 
-plot3 <- ggplot(ds_p2, aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
-  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.25,size=.5)+
-  #geom_errorbar(aes(ymin=Estimate-stderr, ymax=Estimate+stderr), width=.25,size=.5)+
-  geom_line(size=2)+geom_point(size=6)+
-  #Aesthetics!-------------------------
-  scale_y_continuous(limits=c(0,1.5),breaks=seq(0,1.5,0.25))+
-  scale_x_continuous(breaks=1:8)+
-  scale_color_manual(values=c("black","red"))+
-  ylab("Decision Weight")+
-  xlab("Element Position")+#ggtitle('')+
-  theme(plot.title = element_text(size =20,face='bold'))+
-  theme(legend.key = element_blank())+
-  #theme(legend.position="none")+
-  theme(legend.position=c(0.45,0.9),legend.text=element_text(size=15,face="bold"),legend.direction="horizontal",legend.title = element_blank(),legend.key.size=unit(1,"cm")) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  theme(axis.text=element_text(size=14,face="bold"))+
-  theme(axis.title=element_text(family="Helvetica", face="bold",vjust=0.8))
+plot3 <- ds_p2 %>% 
+  ggplot(aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+  #geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.25,size=.5)+
+    geom_errorbar(aes(ymin=Estimate-stderr, 
+                      ymax=Estimate+stderr), 
+                      width=.25,
+                      size=.5)+
+                      geom_line(size=2)+
+                      geom_point(size=6)+
+    #Aesthetics!--------------------------------------------------------
+                  scale_y_continuous(limits=c(0,1.5),
+                                     breaks=seq(0,1.5,0.25))+
+                  scale_x_continuous(breaks=1:8)+
+                  scale_color_manual(values=c("#E69F00", "#56B4E9"))+
+                  ylab("Decision Weight")+
+                  xlab("Element Position")+
+                  ggtitle('Decision weights for each piece of evidence \ngrouped by congruency of cued category')+
+                  theme(plot.title = element_text(size =15,face='bold'))+
+                  theme(legend.key = element_blank())+
+                  #theme(legend.position="none")+
+                  theme(legend.position=c(0.45,0.9),
+                        legend.text=element_text(size=15,face="bold"),
+                        legend.direction="horizontal",
+                        legend.title = element_blank(),
+                        legend.key.size=unit(1,"cm")) +
+                  theme(panel.grid.major = element_blank(), 
+                        panel.grid.minor = element_blank())+
+                  theme(axis.text=element_text(size=14,face="bold"))+
+                  theme(axis.title=element_text(family="Helvetica", 
+                                                face="bold",vjust=0.8))
 
 plot3
 
