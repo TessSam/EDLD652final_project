@@ -183,8 +183,8 @@ plot1
 ## group individual accuracy by expectation cue category
 
 # Aggregate and run ANOVA, get eta sq for the scatterplot
-# agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
-# ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
+agg<-aggregate(ACC~SUBID+CUETYPE, data = ds, mean);
+ezANOVA(agg, dv=ACC, wid = SUBID,within=CUETYPE)
 
 # RT:Cue effect, not using 
 # rt_exp<-ds %>% 
