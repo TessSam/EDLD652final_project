@@ -220,14 +220,14 @@ acc_ind_wide <- acc_ind %>%
 
 
 #bootstrapper object     
-bsr <- bootstrapper(20, group = NULL)
+bsr <- bootstrapper(20, group = NULL, seed = 652)
 #coefficient of determination to add to plot
 cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
 # ggplot plotting correlation for grouped mean accuracy
 #add some annotation for effect size, tips from Raleigh 
 #clearer figure axes, tips from Anwesha
-plot2 <- acc_ind_wide %>% 
+plot2 <- acc_ind_wide %>%  
   ggplot(aes(valid, invalid)) +
   geom_smooth(method = "lm", 
               color = NA, 
@@ -304,39 +304,62 @@ plot(allEffects(m2_expcmp))
 #======================================================================================================
 
 #tidyway of formating mixed models for plot 
-tidied_m <- broom.mixed::tidy(m2_expcmp, conf.int = TRUE)
-
+tidied_m <- m2_expcmp %>% 
+  broom.mixed::tidy(conf.int = TRUE)  
+#keeping only fixed effects
+tidied_m <- tidied_m[-c(1,2,11),]
+tidied_m$group[1:8] <- c(rep("incongruent",1,4),rep("congruent",1,4)) 
+#accounting for partical effects?
+tidied_m$estimate[5:8]<- unlist(c(tidied_m[1:4,4]+tidied_m[5:8,4]))
 #evidence position
-EVnum<-rep(seq(1,4,1),2);
+tidied_m <- tidied_m %>% mutate(evnum = as.numeric(rep(seq(1,4,1),2)))
+
+
+
+EVnum<-rep(seq(1,4,1),2)
+
 #congruency effect distinction
 cond<-c(rep("incongruent",1,4),rep("congruent",1,4));
 #effects for each position separately for congruency(consistant or inconsistant) with cue category, adjust negative values?
 #with adding
 coefs<- unlist(c(tidied_m[3:6,4],tidied_m[3:6,4]+tidied_m[7:10,4]));
 # data frame for plotting, initial plotting wrong or missing something using tidy
-ds_p2 <-
-  data.frame(EVnum=EVnum,
-             cond=cond,
-             Estimate=c(coefs),
-             stderr=tidied_m$std.error[3:10],
-             conf.low = abs(tidied_m$conf.low[3:10]),
-             conf.high =tidied_m$conf.high[3:10])
+ds_p2 <- data.frame(EVnum=EVnum,
+                    cond=cond,
+                    Estimate=c(coefs),
+                    stderr=tidied_m$std.error[3:10],
+                    conf.low = abs(tidied_m$conf.low[3:10]),
+                    conf.high =tidied_m$conf.high[3:10])
 
 row.names(ds_p2) <- tidied_m$term[3:10]
 
-ds_p2
+
+ds_pgroup <- ds_p2 %>% group_by(cond)
+
+
 
 ## Decision Weights,  beta values (regression coefficients) calculated sepaprately for trials with expectation cues congruet and incongruent with the correct trial identity (cardinal or diagonal), plotted on y with position of elements plotted on x   (Data vis plot 3)
 
-plot3 <- ds_p2 %>% 
-  ggplot(aes(x=EVnum, y=Estimate,group=cond,color=cond)) + 
+plot3 <- tidied_m %>% 
+  ggplot(aes(x = evnum,
+             y =estimate,
+             color = group)) + 
+    #cant get it to work
+   # stat_confidence_density(aes(x = estimate, moe = std.error, group = evnum, confidence = 0.95),data = tidied_m) +
   #geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.25,size=.5)+
-    geom_errorbar(aes(ymin=Estimate-stderr, 
-                      ymax=Estimate+stderr), 
+    geom_errorbar(aes(ymin=estimate-std.error, 
+                      ymax=estimate+std.error), 
                       width=.25,
                       size=.5)+
     geom_line(size=2)+
+    geom_ribbon(aes(ymin = estimate - std.error,
+                    ymax = estimate + std.error,
+                    fill = group),
+                    alpha = 0.1,
+                    show.legend = F) +
     geom_point(size=6)+
+    #stat_summary(aes(group = ), fun.data = mean_se, geom = "ribbon", 
+     #          fill = "pink", alpha = 0.6) +
     #Aesthetics!--------------------------------------------------------
                   theme_bw()+
                   scale_y_continuous(limits=c(0,1.5),
