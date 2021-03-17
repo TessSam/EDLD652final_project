@@ -104,7 +104,7 @@ ds<-ds%>%
 ## Stage2-Behavior Analysis ( mean aggregate of accuracy by cuetype)
 
 #cb friendly palette using black
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+#cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 #Aggregated mean for accuracy by cuetype 
 # ACC:Cue efffect
@@ -128,47 +128,52 @@ group_means <- acc_exp %>%
   group_by(CUETYPE) %>% 
   summarize(mean = mean(ACC))
 
-
+set.seed(652)
 plot1 <- 
   ggplot(data = acc_exp, 
          aes(CUETYPE, ACC, color = CUETYPE)) +
-  # geom_segment(data = sumacc,
-  #              aes(y=ACC,
-  #                  yend = ACC,
-  #                  x= CUETYPE,
-  #                  xend = CUETYPE,
-  #                  width = 2)) +
-  # geom_hline(data = sumacc,
-  #            aes(yintercept=ACC, 
-  #                color = CUETYPE,
-  #                linetype = CUETYPE)) +
   geom_errorbar(data = sumacc,
                 aes(ymin = ACC - se,
                     ymax = ACC + se,
-                    colour = "CUETYPE"),
+                    colour = "black"),
                     width = 0.2,
                     position = position_dodge(0.5)) +
   geom_jitter(width = 0.2, 
               height = 0,
               size = 2.5) +
-  annotate("segment", x = 0.8, xend = 1.2, 
+   annotate("segment", x = 0.8, xend = 1.2, 
            y = group_means$mean[1], yend =group_means$mean[1],
-           color = "#CC79A7") +
-  annotate("segment", x = 1.8, xend = 2.2, 
+           color = "#0072B2") +
+   annotate("text", label = "Mean = 0.439", x = 0.8 - 0.1,
+           y = group_means$mean[1]+0.02,
+           color = "#0072B2") +
+   annotate("segment", x = 1.8, xend = 2.2, 
            y = group_means$mean[2], yend =group_means$mean[2],
-           color = "#D55E00") +
-    annotate("text", label = "Mean", x = 1.7,
-           y = group_means$mean[2],
-           color = "#D55E00") +
-  scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")) +
-  # geom_bar(stat = "identity", 
-  #          fill = "black", 
-  #          width = 0.6,
-  #          position = position_dodge()) +
+           color = "#009E73") +
+    annotate("text", label = "Mean = 0.687", x = 1.7,
+           y = group_means$mean[2]+0.02,
+           color = "#009E73") +
+  scale_color_manual(labels = c("Error Bar", "Invalid", "Valid"),
+                     values=c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")) +
   labs(title = "Mean Accuracy Across Participants for Valid/Invalid Cues", 
        x = " Expectation Cuetype",
-       y = "Accuracy") +
-  theme_bw()
+       y = "Accuracy",
+       color = "Legend") +
+  theme_bw() +
+  theme(plot.title = element_text(size =16,face='bold'))+
+                  theme(legend.text=element_text(family="Helvetica",
+                                                 size=9,
+                                                 face="bold"),
+                        legend.title = element_text(family="Helvetica",
+                                                    size=11,
+                                                    face="bold"),
+                        legend.background = element_rect(fill="transparent")) +
+                  theme(axis.text=element_text(size=13,
+                                               face="bold"))+
+                  theme(axis.title=element_text(family="Helvetica", 
+                                                face="bold",
+                                                vjust=0.8)) 
+
 plot1
 
 ```
@@ -220,7 +225,7 @@ acc_ind_wide <- acc_ind %>%
 
 
 #bootstrapper object     
-bsr <- bootstrapper(20, group = NULL, seed = 652)
+bsr <- bootstrapper(20, group = NULL)
 #coefficient of determination to add to plot
 cor(acc_ind$ACC[acc_ind$CUETYPE=="valid"],acc_ind$ACC[acc_ind$CUETYPE=="invalid"])
 
@@ -233,24 +238,42 @@ plot2 <- acc_ind_wide %>%
               color = NA, 
               size = 1.5, 
               se = T) + 
-  geom_point(size = 1,
-             alpha = 0.6,
-             color = "grey80") +
-  geom_point(data = bsr, color = "red") +
-  geom_smooth(data = bsr, method = "lm", color = "red", fullrange = T, se = F) +
-  annotate('text', 
-           x = 0.85, 
-           y = 0.75,
-           label = "R^{2} == -0.774", parse = T, size = 5) +
-  labs(title = "Correlation of Individual Mean Accuracy Values \nBetween Valid and Invalid Cue Trials", 
-       subtitle = "",
-       x = "Valid Cue Accuracy",
-       y = "Invalid Cue Accuracy") +
-  theme_light()+
-  transition_states(.draw) +
-  ease_aes()
+    geom_point(size = 1,
+               alpha = 0.6,
+               color = "grey80") +
+      geom_point(data = bsr, 
+                 color = "#00ff95") +
+        geom_smooth(data = bsr, 
+                    method = "lm", 
+                    color = "#00ff95", 
+                    fullrange = T, 
+                    se = F) +
+          annotate('text', 
+                   x = 0.86, 
+                   y = 0.75,
+                   label = "R^{2} == -0.774", parse = T, size = 5) +
+            labs(title = "Correlation of Individual Mean Accuracy Values \nBetween Valid and Invalid Cue Trials", 
+            subtitle = "",
+              x = "Valid Cue Accuracy",
+              y = "Invalid Cue Accuracy") +
+                  theme_light()+
+                  theme(plot.title = element_text(size =16,face='bold'))+
+                  theme(legend.text=element_text(family="Helvetica",
+                                                 size=9,
+                                                 face="bold"),
+                        legend.title = element_text(family="Helvetica",
+                                                    size=11,
+                                                    face="bold"),
+                        legend.background = element_rect(fill="transparent")) +
+                  theme(axis.text=element_text(size=13,
+                                               face="bold"))+
+                  theme(axis.title=element_text(family="Helvetica", 
+                                                face="bold",
+                                                vjust=0.8)) +
+                  transition_states(.draw, transition_length = 0) +
+                    ease_aes()
 
-animate(plot2, fps=1)
+animate(plot2, fps=5)
 ```
 
 
@@ -371,7 +394,7 @@ plot3 <- tidied_m %>%
                   labs(color = "Cue-Element Congruency")+
                   ggtitle('Decision weights for each piece of evidence \ngrouped by congruency of cued category')+
                   theme(plot.title = element_text(size =15,face='bold'))+
-                  theme(legend.position = c(0.8,0.8),
+                  theme(legend.position = c(0.82,0.8),
                         legend.key = element_blank(),
                         legend.text=element_text(family="Helvetica",
                                                  size=9,
